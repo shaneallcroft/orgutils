@@ -1,5 +1,3 @@
-import discord
-
 # org file has to start with single/or multiple newline
 def orgToDict(filename, string='!!orgutilsdefault!!', level=1):
     if not string=='!!orgutilsdefault!!':
