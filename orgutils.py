@@ -30,6 +30,12 @@ def orgToDict(filename, string=None, level=1):
     return full_dict
 
 
+
+
+# dictToOrg:
+# Takes in a python dictionary and a file path. Outputs the contents of the dictionary into an org file with
+# a matching hierarchy
+# -------------------------------------------------------------------------------------------------------
 def dictToOrg(org_data, output_filename, level=1):
     # Open the file in the appropriate mode based on the current level
     if level == 1:
