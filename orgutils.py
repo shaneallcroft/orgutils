@@ -1,6 +1,6 @@
 
 # orgToDict:
-# takes in a path to an org file, returns a hierarchical dictionary structured identical to the org file.
+# Takes in a path to an org file, returns a hierarchical dictionary structured identical to the org file.
 # Org headings are used as string keys in the dictionary
 # -------------------------------------------------------------------------------------------------------
 def orgToDict(filename, string=None, level=1):
@@ -28,3 +28,26 @@ def orgToDict(filename, string=None, level=1):
                                              string='\n'+'\n'.join(split_item[base_value_index:]),
                                              level=level+1)
     return full_dict
+
+
+def dictToOrg(org_data, output_filename, level=1):
+    # Open the file in the appropriate mode based on the current level
+    if level == 1:
+        f = open(output_filename, 'w')
+    else:
+        f = open(output_filename, 'a')
+    # Check for base case
+    if isinstance(org_data, dict):
+        for key in org_data.keys():
+            if f == None:
+                f = open(output_filename, 'a')
+            f.write(('*' * level) + ' ' + str(key) + '\n')
+            f.close()
+            f = None
+            dictToOrg(org_data[key],
+                      output_filename,
+                      level+1)
+    else:
+        # Base case reached
+        f.write(str(org_data) + '\n')
+        f.close()
