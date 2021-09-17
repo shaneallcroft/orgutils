@@ -1,4 +1,3 @@
-
 # orgToDict:
 # Takes in a path to an org file, returns a hierarchical dictionary structured identical to the org file.
 # Org headings are used as string keys in the dictionary
@@ -21,7 +20,10 @@ def orgToDict(filename, string=None, level=1):
             # base case reached
             full_dict[split_item[0].strip()] = ''
             while base_value_index < len(split_item) and not split_item[base_value_index].startswith('*'):
-                full_dict[split_item[0].strip()] += split_item[base_value_index].strip()
+                if full_dict[split_item[0].strip()] == '':
+                    full_dict[split_item[0].strip()] += split_item[base_value_index].strip()
+                else:
+                    full_dict[split_item[0].strip()] += ' ' + split_item[base_value_index].strip()
                 base_value_index += 1
             continue
         full_dict[split_item[0].strip()] = orgToDict(filename=filename,

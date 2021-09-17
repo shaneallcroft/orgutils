@@ -1,5 +1,5 @@
 import argparse
-import orgutils
+from orgutils import orgutils
 
 
 
