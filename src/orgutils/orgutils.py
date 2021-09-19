@@ -21,12 +21,12 @@ def orgToDict(filename, string=None, level=1, newlines=True):
             full_dict[split_item[0].strip()] = ''
             while base_value_index < len(split_item) and not split_item[base_value_index].startswith('*'):
                 # source code block
-                if split_item[base_value_index].startswith('+BEGIN_SRC'):
+                if split_item[base_value_index].startswith('#+BEGIN_SRC'):
                     #pick it up
                     full_dict[split_item[0].strip()] = []
                     base_value_index += 1
-                    while not split_item[base_value_index].startswith('+END_SRC'):
-                       full_dict[split_item[0].strip()].append(split_item[base_value_index][:-1])
+                    while not split_item[base_value_index].startswith('#+END_SRC'):
+                       full_dict[split_item[0].strip()].append(split_item[base_value_index])
                        base_value_index += 1
                     base_value_index += 1
                     if base_value_index >= len(split_item):
@@ -35,15 +35,12 @@ def orgToDict(filename, string=None, level=1, newlines=True):
                     continue
                 # if first time iterating through this while loop
                 if full_dict[split_item[0].strip()] == '':
-                    if not newlines:
-                        full_dict[split_item[0].strip()] += split_item[base_value_index].strip()
-                    else:
-                        full_dict[split_item[0].strip()] += split_item[base_value_index]
+                    full_dict[split_item[0].strip()] += split_item[base_value_index].strip()
                 else:
                     if not newlines:
                         full_dict[split_item[0].strip()] += ' ' + split_item[base_value_index].strip()
                     else:
-                        full_dict[split_item[0].strip()] += ' ' + split_item[base_value_index]
+                        full_dict[split_item[0].strip()] += '\n' + split_item[base_value_index].strip()
                 base_value_index += 1
             continue
         full_dict[split_item[0].strip()] = orgToDict(filename=filename,
