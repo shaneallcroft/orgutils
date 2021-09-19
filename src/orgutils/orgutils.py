@@ -2,7 +2,7 @@
 # Takes in a path to an org file, returns a hierarchical dictionary structured identical to the org file.
 # Org headings are used as string keys in the dictionary
 # -------------------------------------------------------------------------------------------------------
-def orgToDict(filename, string=None, level=1):
+def orgToDict(filename, string=None, level=1, newlines=True):
     if not string == None:
         data = string
     else:
@@ -20,15 +20,36 @@ def orgToDict(filename, string=None, level=1):
             # base case reached
             full_dict[split_item[0].strip()] = ''
             while base_value_index < len(split_item) and not split_item[base_value_index].startswith('*'):
+                # source code block
+                if split_item[base_value_index].startswith('+BEGIN_SRC'):
+                    #pick it up
+                    full_dict[split_item[0].strip()] = []
+                    base_value_index += 1
+                    while not split_item[base_value_index].startswith('+END_SRC'):
+                       full_dict[split_item[0].strip()].append(split_item[base_value_index][:-1])
+                       base_value_index += 1
+                    base_value_index += 1
+                    if base_value_index >= len(split_item):
+                        # end of block or file
+                        break
+                    continue
+                # if first time iterating through this while loop
                 if full_dict[split_item[0].strip()] == '':
-                    full_dict[split_item[0].strip()] += split_item[base_value_index].strip()
+                    if not newlines:
+                        full_dict[split_item[0].strip()] += split_item[base_value_index].strip()
+                    else:
+                        full_dict[split_item[0].strip()] += split_item[base_value_index]
                 else:
-                    full_dict[split_item[0].strip()] += ' ' + split_item[base_value_index].strip()
+                    if not newlines:
+                        full_dict[split_item[0].strip()] += ' ' + split_item[base_value_index].strip()
+                    else:
+                        full_dict[split_item[0].strip()] += ' ' + split_item[base_value_index]
                 base_value_index += 1
             continue
         full_dict[split_item[0].strip()] = orgToDict(filename=filename,
-                                             string='\n'+'\n'.join(split_item[base_value_index:]),
-                                             level=level+1)
+                                                     string='\n'+'\n'.join(split_item[base_value_index:]),
+                                                     level=level+1,
+                                                     newlines=newlines)
     return full_dict
 
 
