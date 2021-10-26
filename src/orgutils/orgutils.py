@@ -52,7 +52,6 @@ def orgToDict(filename, string=None, level=1, newlines=True):
 
 
 
-
 # dictToOrg:
 # Takes in a python dictionary and a file path. Outputs the contents of the dictionary into an org file with
 # a matching hierarchy
@@ -117,7 +116,7 @@ def dictToHtml(dict_data, title='', level=1, full_document=False):
         #html_string += '.active, .collapsible:hover{ background-color: #555;}\n'
         #html_string += '.content {padding: 0 18px; max-height:0; overflow:hidden; transition: max-height 0.2s ease-out;'
         html_string += '</head>\n<body>\n<style>\n'
-        html_string += '            body {\n'
+        html_string += '        body {\n'
         html_string += '            font-family: "Roboto", sans-serif;\n'
         html_string += '            font-size: 17px;\n'
         html_string += '            background-color: #fdfdfd;\n'
@@ -163,39 +162,138 @@ def dictToHtml(dict_data, title='', level=1, full_document=False):
     return html_string
     
     
-    
+
+
+def orgToOrgNode(filename, string=None, level=1, newlines=True):
+    if not string == None:
+        data = string
+    else:
+        with open(filename) as f:
+            data = '\n' + f.read()
+    full_dict = {}
+    first_layer = data.split('\n'+('*' * level)+' ')[1:]
+    for item in first_layer:
+        if item == '':
+            continue
+        # process first line
+        split_item = item.split('\n')
+        base_value_index = 1
+        if not split_item[1].startswith('*'):
+            # base case reached
+            full_dict[split_item[0].strip()] = ''
+            while base_value_index < len(split_item) and not split_item[base_value_index].startswith('*'):
+                # source code block
+                if split_item[base_value_index].startswith('#+BEGIN_SRC'):
+                    #pick it up
+                    full_dict[split_item[0].strip()] = []
+                    base_value_index += 1
+                    while not split_item[base_value_index].startswith('#+END_SRC'):
+                       full_dict[split_item[0].strip()].append(split_item[base_value_index])
+                       base_value_index += 1
+                    base_value_index += 1
+                    if base_value_index >= len(split_item):
+                        # end of block or file
+                        break
+                    continue
+                # if first time iterating through this while loop
+                if full_dict[split_item[0].strip()] == '':
+                    full_dict[split_item[0].strip()] += split_item[base_value_index].strip()
+                else:
+                    if not newlines:
+                        full_dict[split_item[0].strip()] += ' ' + split_item[base_value_index].strip()
+                    else:
+                        full_dict[split_item[0].strip()] += '\n' + split_item[base_value_index].strip()
+                base_value_index += 1
+            continue
+        full_dict[split_item[0].strip()] = orgToDict(filename=filename,
+                                                     string='\n'+'\n'.join(split_item[base_value_index:]),
+                                                     level=level+1,
+                                                     newlines=newlines)
+    return full_dict
+
+
+
     
     
 ####################################
 #         OrgUtils object
 ####################################
 
-
-#class Org:
+class OrgNode:
+    # key tags
+    # 
+    #
+    # 
     
-#    def __init__(self, in_dict={}):
-#        self.dictionary = in_dict
+    def __init__(self, key, content, level=1):
+        self.level = level
+        self.key = key
+        self.tags = []
+        self.leaf = False
+        self.content = dict()
+        self.content['\n* '] = ''
+        
+        lines = content.split('\n')
+        self.rawContent = content
+        line_count = 0
+        
+        while line_count < len(lines) and (not lines[line_count].startswith('*')):#lines[line_count].startswith('#+') or lines[line_count].strip() == '':
+            if lines[line_count].startswith('#+'):
+                # tag
+                self.tags.append(lines[line_count][2:])
+            elif lines[line_count].strip() == '':
+                garbage_variable = True
+            else:
+                self.content['\n* '] += lines[line_count]
+            line_count += 1
+        subnodes_raw = ('\n' + '\n'.join(lines[line_count:])).split('\n' + ('*' * self.level) + ' ')
+        print(subnodes_raw)
+        if len(subnodes_raw) == 1:
+            # split did nothing ie pattern not found ie base case
+            self.leaf = True
+        else:
+            while lines[0] == '':
+                lines = lines[1:]
+            
+            self.contentOrdered = [] # notably the 'value' of the node is not captured in the ordered version 
+            for node_raw in subnodes_raw:
+                node_key = node_raw.split('\n')[0].strip()
+                if node_key == '':
+                    continue
+                node_content_raw = '\n'.join(node_raw.split('\n')[1:]) # TODO really not great efficiency wise here, fix
+                self.content[node_key] = OrgNode(node_key, node_content_raw, level + 1)
+                self.contentOrdered.append(self.content[node_key])
 
+            
+    def addChild(self, child, index=-1):
+        self.content[chlid.key] = child
+        child.level = self.level + 1
+        if index != -1:
+            self.contentOrdered = self.contentOrdered[:index] + [child]  + self.contentOrdered[index:]
+        else:
+            self.contentOrdered = self.contentOrdered + [child]
 
+    def getValue(self):
+        return self.content['\n* ']
 
-
-#import argparse
-#from orgutils import orgutils
-#from src.orgutils.orgutils import orgutils
-
-# manual tests for orgutils
-#def main():
-#    parser = argparse.ArgumentParser('takes in parameters testing orgutils')
-#    parser.add_argument('--org-file', help='the org file to turn into a dictionary')
-#    args = parser.parse_args()
-#
-#    org_dict = orgToDict(filename=args.org_file) #orgutils.orgToDict(filename=args.org_file)
-#    #print(org_dict)
-#    #dictToOrg(org_data=org_dict, output_filename='test2.org')#orgutils.dictToOrg(org_data=org_dict, output_filename='test2.org')
-#    
-#    print(dictToHtml(dict_data=org_dict,full_document=True))#orgutils.dictToHtml(dict_data=org_dict)
-
-## automatic tests
-    
-#if __name__ == '__main__':
-#    main()
+        
+    def __str__(self):
+        ret_str = ('*' * self.level) + ' ' + str(self.key) + '\n'
+        if len(self.tags) > 0:
+            ret_str += '#+'
+            ret_str += '\n#+'.join(self.tags) + '\n'
+        if not str(self.getValue()) == '':
+            ret_str += str(self.getValue()) + '\n'
+        if self.leaf:
+            return ret_str
+        
+        for node in self.contentOrdered:
+            if node.level <= self.level:
+                node.level = self.level + 1
+            ret_str += str(node)
+        return ret_str
+        
+    def execute(self):
+        if not 'BEGIN_SRC' in self.tags:
+            print('org node')
+            
