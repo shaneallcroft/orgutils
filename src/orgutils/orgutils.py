@@ -214,7 +214,8 @@ def orgToOrgNode(filename, string=None, level=1, newlines=True):
 
 
     
-    
+
+
 ####################################
 #         OrgUtils object
 ####################################
@@ -226,12 +227,13 @@ class OrgNode:
     # 
     
     def __init__(self, key, content, level=1):
-        self.level = level
-        self.key = key
+        self.level = level            
+        self.key = key.lower()   
         self.tags = []
-        self.leaf = False
+        self.isLeaf = False
         self.content = dict()
         self.content['\n* '] = ''
+        self.translator = False
         
         lines = content.split('\n')
         self.rawContent = content
@@ -250,7 +252,7 @@ class OrgNode:
         print(subnodes_raw)
         if len(subnodes_raw) == 1:
             # split did nothing ie pattern not found ie base case
-            self.leaf = True
+            self.isLeaf = True
         else:
             while lines[0] == '':
                 lines = lines[1:]
@@ -262,6 +264,8 @@ class OrgNode:
                     continue
                 node_content_raw = '\n'.join(node_raw.split('\n')[1:]) # TODO really not great efficiency wise here, fix
                 self.content[node_key] = OrgNode(node_key, node_content_raw, level + 1)
+                if self.content[node_key].isTranslator:
+                    self.isTranslator = True
                 self.contentOrdered.append(self.content[node_key])
 
             
@@ -284,7 +288,7 @@ class OrgNode:
             ret_str += '\n#+'.join(self.tags) + '\n'
         if not str(self.getValue()) == '':
             ret_str += str(self.getValue()) + '\n'
-        if self.leaf:
+        if self.isLeaf:
             return ret_str
         
         for node in self.contentOrdered:
@@ -292,7 +296,37 @@ class OrgNode:
                 node.level = self.level + 1
             ret_str += str(node)
         return ret_str
+
+    def searchByTag(self, tag):
+        # takes in a tag as input
+        # returns a list of tuples of nodes that
+        print('TODO implement searchByTag')
+
+    def translate(self, node_to_translate):
+        # TODO implement functionality for non default recipe
+        # this would probably be pretty straightforward, just a
+        # matter of reordering the self.contentOrdered variable?
+        # so how it'll happen is kind of node searched will have a different function,
+        # and the functions can be called from the match statements in other functions seach level
         
+        translation_result = ''
+        for translator_node in self.contentOrdered:
+            # TODO check for over ridable tag
+            if not translator_node.isTranslator:
+                continue
+
+    def generateTranslationCode(self, counter=0):
+        if counter == 0
+        
+        
+
+    def getLeaves(self):
+        print('TODO implement getLeaves')
+        
+    #def export(self, keyword):
+    #    print('TODO implement export')
+    # think about this more ^^^
+    
     def execute(self):
         if not 'BEGIN_SRC' in self.tags:
             print('org node')
