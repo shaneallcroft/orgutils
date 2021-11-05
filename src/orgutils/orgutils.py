@@ -1,4 +1,4 @@
-
+import os
 # orgToDict:
 # Takes in a path to an org file, returns a hierarchical dictionary structured identical to the org file.
 # Org headings are used as string keys in the dictionary
@@ -315,12 +315,15 @@ class OrgNode:
         # and the functions can be called from the match statements in other functions seach level
         if self.translationCode == '':
             self.generateTranslationCode()
-                
         specific_code = 'from orgutils import OrgNode\n\n\n' + self.translationCode
         specific_code += "\n\n\nif __name__ == '__main__':\n"
         specific_code += self.tab + 'node_to_translate = OrgNode(key=\'root\',content="""'+ str(node_to_translate) +'""")\n'
         specific_code += self.tab + 'print(func0(node_to_translate))\n'
-        return specific_code
+        #system_ret = os.system("python -c '" + specific_code.replace("'","\'") + "'")
+        system_ret = os.popen("python -c \"" + specific_code.replace('"','\\"') + '\"').read()
+        #print(system_ret)
+        return system_ret
+        
         
         # pick it up, append the whole of thhe node to translate, then call a separate ypthon proccess
 

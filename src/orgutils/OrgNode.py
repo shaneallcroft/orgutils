@@ -15,6 +15,7 @@ class OrgNode:
         self.isTranslator = False
         self.tab = '    '
         self.separator = '\n'
+        self.translationCode = ''
         lines = content.split('\n')
         self.rawContent = content
         line_count = 0
@@ -33,6 +34,8 @@ class OrgNode:
         if len(subnodes_raw) == 1:
             # split did nothing ie pattern not found ie base case
             self.isLeaf = True
+            if 'translator' in self.tags:
+                self.isTranslator = True
         else:
             while lines[0] == '':
                 lines = lines[1:]
@@ -94,30 +97,37 @@ class OrgNode:
             # TODO check for over ridable tag
             if not translator_node.isTranslator:
                 continue
+        # pick it up, append the whole of thhe node to translate, then call a separate ypthon proccess
 
     def generateTranslationCode(self, counter=0):
         # it is marked whether each node is a leaf and or a
         # translator, this information should be sufficient to generate the source code
         if self.isLeaf and not self.isTranslator:
+            self.translationCode = 'def func'+str(counter)+'(node_to_translate):\n' 
+            self.translationCode += self.tab + "ret_str += \"\"\"" + self.content + "\"\"\""
+            self.translationCode += self.tab + 'return ret_str'
+
+        elif self.isLeaf and self.isTranslator:
             self.translationCode = 'def func'+str(counter)+'(node_to_translate):\n'
-            self.translationCode += self.tab + "ret_str = ''\n"
-            counter += 1
-            if 'BEGIN_SRC python' in self.tags:
-                # python code intended
-                lines = self.content.split(self.separator)
-                for line in lines:
-                    # TODO parameterize this to not be vvvv specific to 4 width tab
-                    if line.startswith('  '):
-                        line = '  ' + line
-                    self.translationCode += line
-            else:
-                self.translationCode += "ret_str += \"\"\"" + self.content + "\"\"\""
             self.translationCode += self.content
-        for org_node in self.contentOrdered:
-            org_node.generateTranslationCode
+            self.translationCode += self.tab + 'return ret_str'
+
+        # an idea for solving some of the potential ambiguity / functionality pitfalls are tags that apply to the whole of the node
+        # like disjoint or conjunction
+        else:
+            current_function_string = 'def func'+str(counter)+'(node_to_translate):\n'
+            number_before = counter
+            self.translationCode  = ''
             
+            match_added = False
+            for org_node in self.contentOrdered:
+                counter += 1                
+                self.translationCode += org_node.generateTranslationCode(counter)
+                current_function_string += "if '--u->' in node_to_translate.key:\n"
+                current_function_string += (self.tab * 2) + 'func'+ str(counter) + '(node_to_translate)\n'
+            self.translationCode += current_function_string
             
-        self.translationCode += self.tab + 'return ret_str'
+        return self.translationCode
         
         
 

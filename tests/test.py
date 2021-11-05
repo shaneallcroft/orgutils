@@ -1,6 +1,6 @@
 import argparse
-from orgutils import orgutils
-
+#from orgutils import orgutils
+#from src.orgutils.orgutils import orgutils
 
 
 
@@ -10,11 +10,11 @@ def main():
     parser.add_argument('--org-file', help='the org file to turn into a dictionary')
     args = parser.parse_args()
 
-    org_dict = orgutils.orgToDict(filename=args.org_file)
-    print(org_dict)
+    
+    #print(org_dict)
     orgutils.dictToOrg(org_data=org_dict, output_filename='test2.org')
     
-
+    orgutils.dictToHtml(dict_data=org_dict)
 
 # automatic tests
     

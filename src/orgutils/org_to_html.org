@@ -64,7 +64,7 @@ font-size: 17px;
             ret_str += '</ul>\n </li>\n'
     else:
       # Base case reached
-        ret_str += '<li>' + str(node_to_translate.content) + '</li>\n'
+        ret_str += '<li>' + str(node_to_translate.getValue()) + '</li>\n'
 #+END_SRC
 * body code cap
 #+BEGIN_SRC html
