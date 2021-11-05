@@ -213,7 +213,8 @@ def orgToOrgNode(filename, string=None, level=1, newlines=True):
 
 
 
-    
+
+#def formatPythonCode()
 
 
 ####################################
@@ -221,20 +222,19 @@ def orgToOrgNode(filename, string=None, level=1, newlines=True):
 ####################################
 
 class OrgNode:
-    # key tags
-    # 
-    #
-    # 
-    
+    counter = 0
     def __init__(self, key, content, level=1):
         self.level = level            
-        self.key = key.lower()   
+        self.key = key.lower()
         self.tags = []
         self.isLeaf = False
         self.content = dict()
-        self.content['\n* '] = ''
-        self.translator = False
-        
+        self.content['\n* '] = '' # in order to not limit what actual content org files can include
+        self.isTranslator = False
+        self.tab = '    '
+        self.separator = '\n'
+        self.translationCode = ''
+        self.kickOffNumber = -1
         lines = content.split('\n')
         self.rawContent = content
         line_count = 0
@@ -246,13 +246,18 @@ class OrgNode:
             elif lines[line_count].strip() == '':
                 garbage_variable = True
             else:
-                self.content['\n* '] += lines[line_count]
+                if (line_count == len(lines) - 1) or lines[line_count + 1].startswith('*') or lines[line_count + 1].startswith('#+'):
+                    self.content['\n* '] += lines[line_count]
+                else:
+                    self.content['\n* '] += lines[line_count] + '\n'
             line_count += 1
         subnodes_raw = ('\n' + '\n'.join(lines[line_count:])).split('\n' + ('*' * self.level) + ' ')
-        print(subnodes_raw)
+        #print(subnodes_raw)
         if len(subnodes_raw) == 1:
             # split did nothing ie pattern not found ie base case
             self.isLeaf = True
+            if 'translator' in self.tags:
+                self.isTranslator = True
         else:
             while lines[0] == '':
                 lines = lines[1:]
@@ -308,15 +313,61 @@ class OrgNode:
         # matter of reordering the self.contentOrdered variable?
         # so how it'll happen is kind of node searched will have a different function,
         # and the functions can be called from the match statements in other functions seach level
+        if self.translationCode == '':
+            self.generateTranslationCode()
+                
+        specific_code = 'from orgutils import OrgNode\n\n\n' + self.translationCode
+        specific_code += "\n\n\nif __name__ == '__main__':\n"
+        specific_code += self.tab + 'node_to_translate = OrgNode(key=\'root\',content="""'+ str(node_to_translate) +'""")\n'
+        specific_code += self.tab + 'print(func0(node_to_translate))\n'
+        return specific_code
         
-        translation_result = ''
-        for translator_node in self.contentOrdered:
-            # TODO check for over ridable tag
-            if not translator_node.isTranslator:
-                continue
+        # pick it up, append the whole of thhe node to translate, then call a separate ypthon proccess
 
-    def generateTranslationCode(self, counter=0):
-        if counter == 0
+    def generateTranslationCode(self):
+        # it is marked whether each node is a leaf and or a
+        # translator, this information should be sufficient to generate the source code
+        if 'comment' in self.tags:
+            self.translationCode = ''
+            return self.translationCode
+        # comment nodes for documentation should be ignored
+        
+        if self.isLeaf and not self.isTranslator:
+            self.translationCode = '\ndef func'+str(OrgNode.counter)+'(node_to_translate):\n' + self.tab + 'ret_str = \'\'\n'
+            self.translationCode += self.tab + "ret_str += \"\"\"" + self.getValue() + "\"\"\"\n"
+            self.translationCode += self.tab + 'return ret_str\n'
+
+        elif self.isLeaf and self.isTranslator:
+            self.translationCode = '\ndef func'+str(OrgNode.counter)+'(node_to_translate):\n'+self.tab+'ret_str = \'\'\n'
+            self.translationCode += self.getValue().replace('---R->', 'func' + str(OrgNode.counter))
+            self.translationCode += '\n' + self.tab + 'return ret_str\n'
+
+        # an idea for solving some of the potential ambiguity / functionality pitfalls are tags that apply to the whole of the node
+        # like disjoint or conjunction
+        else:
+            current_function_string = '\ndef func'+str(OrgNode.counter)+'(node_to_translate):\n' +self.tab+'ret_str = \'\'\n'
+            if self.isTranslator:
+                current_function_string += self.tab + "ret_str += \"\"\"" + self.getValue() + "\"\"\"\n"
+            else:
+                current_function_string += self.getValue().replace('---R->', 'func' + str(OrgNode.counter))
+            number_before = OrgNode.counter
+            self.translationCode  = ''
+            
+            match_added = False
+            for org_node in self.contentOrdered:
+                if 'comment' in org_node.tags:
+                    continue
+                isUniversal = '---u->' in org_node.key
+                if isUniversal or not org_node.isTranslator:
+                    OrgNode.counter += 1
+                    current_function_string += (self.tab) + 'ret_str += func'+ str(OrgNode.counter) + '(node_to_translate)\n'
+                self.translationCode += org_node.generateTranslationCode()
+                # TODO add code for other cases like match or simple key matching
+
+            current_function_string += self.tab + 'return ret_str'
+            self.translationCode += current_function_string
+            
+        return self.translationCode
         
         
 
@@ -331,3 +382,4 @@ class OrgNode:
         if not 'BEGIN_SRC' in self.tags:
             print('org node')
             
+

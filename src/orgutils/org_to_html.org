@@ -1,5 +1,4 @@
 * html header
-#+data-1
 #+BEGIN_SRC html
 <!DOCTYPE html>\n<html>\n<head>\n<script>
 #+END_SRC html  
@@ -7,7 +6,14 @@
 #+BEGIN_SRC javascript
 // credit to this repo https://github.com/maqboolkhan/Collapsible-list/blob/master/ul.js
 window.onload = function  () {
-        var li_ul = document.querySelec                                                                                                                                       _li[i].style.cursor = "pointer";
+	var li_ul = document.querySelectorAll(".col_ul li  ul");
+    for (var i = 0; i < li_ul.length; i++) {
+        li_ul[i].style.display = "none"
+    };
+
+    var exp_li = document.querySelectorAll(".col_ul li > span");
+    for (var i = 0; i < exp_li.length; i++) {
+        exp_li[i].style.cursor = "pointer";
         exp_li[i].onclick = showul;
     };
     function showul () {
@@ -48,7 +54,19 @@ font-size: 17px;
 </style>
 <ul class="col_ul">
 #+END_SRC html  
-* --u->
+* RECURSIVE HTML ---U->
+#+translator
 #+BEGIN_SRC python
- 
+    if not node_to_translate.isLeaf:
+        for child in node_to_translate.contentOrdered:
+            ret_str += '<li> <span>' + str(child.key) + '</span>\n<ul>'
+            ret_str += ---R->(child)
+            ret_str += '</ul>\n </li>\n'
+    else:
+      # Base case reached
+        ret_str += '<li>' + str(node_to_translate.content) + '</li>\n'
 #+END_SRC
+* body code cap
+#+BEGIN_SRC html
+</body>
+#+END_SRC html  
