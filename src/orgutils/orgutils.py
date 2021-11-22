@@ -1,8 +1,10 @@
 import os
+import argparse
+
 # orgToDict:
 # Takes in a path to an org file, returns a hierarchical dictionary structured identical to the org file.
 # Org headings are used as string keys in the dictionary
-# -------------------------------------------------------------------------------------------------------
+# ################################################################################
 def orgToDict(filename, string=None, level=1, newlines=True):
     if not string == None:
         data = string
@@ -55,7 +57,7 @@ def orgToDict(filename, string=None, level=1, newlines=True):
 # dictToOrg:
 # Takes in a python dictionary and a file path. Outputs the contents of the dictionary into an org file with
 # a matching hierarchy
-# -------------------------------------------------------------------------------------------------------
+# #######################################################################################################
 def dictToOrg(org_data, output_filename, level=1):
     # Open the file in the appropriate mode based on the current level
     if level == 1:
@@ -142,7 +144,7 @@ def orgToOrgNode(filename, string=None, level=1, newlines=True):
 
 class OrgNode:
     counter = 0
-    def __init__(self, key, content, level=1):
+    def __init__(self, key, content, level=1):  # TODO maybe make defaults, especially a universal spear
         self.level = level            
         self.key = key.lower()
         self.tags = []
@@ -158,9 +160,9 @@ class OrgNode:
         line_count = 0
         
         while line_count < len(lines) and (not lines[line_count].startswith('*')):#lines[line_count].startswith('#+') or lines[line_count].strip() == '':
-            if lines[line_count].startswith('#+'):
+            if lines[line_count].strip().startswith('#+'):
                 # tag
-                self.tags.append(lines[line_count][2:])
+                self.tags.append(lines[line_count].strip()[2:])
             elif lines[line_count].strip() == '':
                 garbage_variable = True
             else:
@@ -174,7 +176,7 @@ class OrgNode:
         if len(subnodes_raw) == 1:
             # split did nothing ie pattern not found ie base case
             self.isLeaf = True
-            if 'translator' in self.tags:
+            if 'translator' in self.tags or 'TRANSLATOR' in self.tags:
                 self.isTranslator = True
         else:
             while lines[0] == '':
@@ -191,19 +193,6 @@ class OrgNode:
                     self.isTranslator = True
                 self.contentOrdered.append(self.content[node_key])
 
-            
-    def addChild(self, child, index=-1):
-        self.content[chlid.key] = child
-        child.level = self.level + 1
-        if index != -1:
-            self.contentOrdered = self.contentOrdered[:index] + [child]  + self.contentOrdered[index:]
-        else:
-            self.contentOrdered = self.contentOrdered + [child]
-
-    def getValue(self):
-        return self.content['\n* ']
-
-        
     def __str__(self):
         ret_str = ('*' * self.level) + ' ' + str(self.key) + '\n'
         if len(self.tags) > 0:
@@ -241,9 +230,23 @@ class OrgNode:
         system_ret = os.popen("python -c \"" + specific_code.replace('"','\\"') + '\"').read()
         #print(system_ret)
         return system_ret
-        
-        
-        # pick it up, append the whole of thhe node to translate, then call a separate ypthon proccess
+
+
+            
+    def addChild(self, child, index=-1):
+        self.content[chlid.key] = child
+        child.level = self.level + 1
+        if index != -1:
+            self.contentOrdered = self.contentOrdered[:index] + [child]  + self.contentOrdered[index:]
+        else:
+            self.contentOrdered = self.contentOrdered + [child]
+
+
+
+
+    def getValue(self):
+        return self.content['\n* ']
+
 
     def generateTranslationCode(self):
         # it is marked whether each node is a leaf and or a
@@ -260,7 +263,7 @@ class OrgNode:
 
         elif self.isLeaf and self.isTranslator:
             self.translationCode = '\ndef func'+str(OrgNode.counter)+'(node_to_translate):\n'+self.tab+'ret_str = \'\'\n'
-            self.translationCode += self.getValue().replace('---R->', 'func' + str(OrgNode.counter))
+            self.translationCode += self.getValue().replace('o---R->', 'func' + str(OrgNode.counter))
             self.translationCode += '\n' + self.tab + 'return ret_str\n'
 
         # an idea for solving some of the potential ambiguity / functionality pitfalls are tags that apply to the whole of the node
@@ -270,29 +273,43 @@ class OrgNode:
             if self.isTranslator:
                 current_function_string += self.tab + "ret_str += \"\"\"" + self.getValue() + "\"\"\"\n"
             else:
-                current_function_string += self.getValue().replace('---R->', 'func' + str(OrgNode.counter))
+                current_function_string += self.getValue().replace('o---R->', 'func' + str(OrgNode.counter))
             number_before = OrgNode.counter
             difference_count = 0
             self.translationCode  = ''
             
             match_added = False
+            if 'o-a-ntt-descend-iterate-over-all-children-->' in self.tags:
+                current_function_string += self.tab + 'for child_node in node_to_translate.contentOrdered:\n'
+                self.tab += '    '
             for org_node in self.contentOrdered:
-                if 'comment' in org_node.tags:
+                if 'o--//->' in org_node.tags:
                     continue
-                isUniversal = '---u->' in org_node.key
-                if isUniversal or not org_node.isTranslator:
-                    OrgNode.counter += 1
-                    current_function_string += (self.tab) + 'ret_str += func'+ str(OrgNode.counter)
-                    current_function_string += '(node_to_translate)\n'
-                self.translationCode += org_node.generateTranslationCode()
-                # TODO add code for other cases like match or simple key matching
-
+                if 'o--t-mi->' in org_node.tags:
+                    print('TODO implement tag MATCH node inclusive')
+                if 'o--t-mr->' in org_node.tags:
+                    print('TODO implement tag MATCH node required')
+                if 'o--p-mi->' in org_node.tags:
+                    print('TODO implement pattern MATCH node inclusive')
+                if 'o--p-me->' in org_node.tags:
+                    print('TODO implement pattern MATCH node exclusive')
+                else:
+                    isUniversal = 'o---u->' in org_node.key
+                    if isUniversal or not org_node.isTranslator:
+                        OrgNode.counter += 1
+                        current_function_string += (self.tab) + 'ret_str += func'+ str(OrgNode.counter)
+                        current_function_string += '(node_to_translate)\n'
+                    self.translationCode += org_node.generateTranslationCode()
+                    # TODO add code for other cases like match or simple key matching
+                    
+            if 'o--node-descend-iterate-over-all-children-->' in self.tags:
             current_function_string += self.tab + 'return ret_str'
             self.translationCode += current_function_string
             
         return self.translationCode
         
-        
+
+    
 
     def getLeaves(self):
         print('TODO implement getLeaves')
@@ -305,4 +322,8 @@ class OrgNode:
         if not 'BEGIN_SRC' in self.tags:
             print('org node')
             
+
+
+
+
 
